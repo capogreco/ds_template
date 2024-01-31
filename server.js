@@ -8,10 +8,19 @@ const server_id = generate ()
 // const kv = await Deno.openKv ()
 const kv = await Deno.openKv (`/Users/capo_greco/Documents/kv/local`)
 
+// const clear_kv = async () => {
+//    const iter = await kv.list ()
+//    for await (const { key } of iter) {
+//       kv.delete (key)
+//    }
+// }
+
+// clear_kv ()
+
 const sockets = new Map ()
 
 const update_ctrl = async () => {
-   const iter = await kv.list ({ prefix : [ `ctrl` ] })
+   const iter = await kv.list ({ prefix : [ server_id, `ctrl` ] })
    const ctrl_array_db = []
    for await (const { value } of iter) {
       ctrl_array_db.push (value)
@@ -38,7 +47,7 @@ const check_map_sockets = async () => {
       const v = a[1]
       if (v.socket.readyState > 1) redundant.push (v.id.no)
       else {
-         const val = await kv.get ([ v.id.type, v.id.no, server_id ]) || false
+         const val = await kv.get ([ server_id, v.id.type, v.id.no  ]) || false
          if (!val) {
             kv.set ([ v.id.type, v.id.no, server_id ], v.id)
          }
@@ -49,17 +58,18 @@ const check_map_sockets = async () => {
 
 const check_db_sockets = async () => {
    check_map_sockets ()
-   // console.log (`checking db sockets`)
-   const iter = await kv.list ({ prefix : [ `ctrl` ] })
+   console.log (`checking db sockets`)
+   const iter = await kv.list ({ prefix : [ server_id, `ctrl` ] })
    const socket_array = []
    for await (const { value } of iter) {
       socket_array.push (value)
    }
-   // console.dir (socket_array)
    const redundant = []
    socket_array.forEach (e => {
+      console.log (e)
       const s = sockets.get (e.id.no) || false
-      // console.log (s) 
+      // console.log (sockets)
+      console.log (s) 
       if (!s) {
          // console.dir (e)
          redundant.push (e)
@@ -67,10 +77,12 @@ const check_db_sockets = async () => {
       }
       if (s.readyState > 1) redundant.push (e)
    })
-   // console.dir (redundant)
+   console.dir (redundant)
    redundant.forEach (async e => {
-      console.log ([ e.id.type, e.id.no, server_id ])
-      const res = await kv.delete ([ e.id.type, e.id.no, server_id ])
+      // console.log ([ e.id.type, e.id.no, server_id ])
+      const val = await kv.get ([ server_id, e.id.type, e.id.no ])
+      // console.log (val)
+      const res = await kv.delete ([ server_id, e.id.type, e.id.no ])
       // console.log (res)
    })
    update_ctrl ()
@@ -94,6 +106,7 @@ const req_handler = async incoming_req => {
          type : path == `/ctrl` ? `ctrl` : `synth`,
          server : server_id,
       }
+      // console.dir (id)
       sockets.set (id.no, { id, socket })
       socket.onopen = async () => {
          // if (id.type == `ctrl`) {
@@ -113,7 +126,7 @@ const req_handler = async incoming_req => {
             id, ping : false,
             last_update : Date.now (),                  
          }
-         kv.set ([ id.type, id.no, server_id ], val)
+         kv.set ([ server_id, id.type, id.no ], val)
 
          socket.send (JSON.stringify ({
             method  : `id`,

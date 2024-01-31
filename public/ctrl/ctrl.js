@@ -10,6 +10,7 @@ socket.onmessage = m => {
          console.log (`name: ${ content.name }`)
       },
       list: () => {
+         console.log (`list: ${ content }`)
          socket_list.innerText = ``
          content.forEach (name => {
             const div = document.createElement (`div`)
