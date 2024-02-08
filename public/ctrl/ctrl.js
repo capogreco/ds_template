@@ -10,13 +10,22 @@ socket.onmessage = m => {
          console.log (`name: ${ content.name }`)
       },
       list: () => {
-         console.log (`list: ${ content }`)
+         console.log (`list:`)
+         console.dir (content)
+
          socket_list.innerText = ``
-         content.forEach (name => {
+         content.forEach (({ id }) => {
             const div = document.createElement (`div`)
-            div.innerText = name
+            div.innerText = id.name
             socket_list.appendChild (div)
          })
+      },
+      ping: () => {
+         socket.send (JSON.stringify ({
+            type    : `ctrl`,
+            method  : `pong`,
+            content : content,
+         }))
       },
       greeting: () => console.log (content),
 

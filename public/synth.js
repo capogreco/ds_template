@@ -9,20 +9,22 @@ const socket = new WebSocket (ws_address)
 socket.onopen = () => console.log (`websocket achieved!`)
 
 socket.onmessage = m => {
-   const msg = JSON.parse (m.data)
+   const { method, content } = JSON.parse (m.data)
 
-   console.log (`${ msg.method } message recieved`)
+   console.log (`${ method } message recieved`)
 
    const handle_incoming = {
 
       id: () => {
-         Object.assign (synth_info, msg.content)
+         Object.assign (synth_info, content)
          console.log (`welcome, ${ synth_info.name }!`)
+      },
 
+      ping: () => {
          socket.send (JSON.stringify ({
             type    : `synth`,
             method  : `pong`,
-            content : ``
+            content : content,
          }))
       },
 
@@ -42,8 +44,8 @@ socket.onmessage = m => {
          // }
       }
    }
-
-   handle_incoming[msg.method] ()
+   console.log (method)
+   handle_incoming[method] ()
 }
 
 
