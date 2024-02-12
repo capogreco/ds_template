@@ -14,10 +14,39 @@ socket.onmessage = m => {
          console.dir (content)
 
          socket_list.innerText = ``
-         content.forEach (({ id }) => {
-            const div = document.createElement (`div`)
-            div.innerText = id.name
-            socket_list.appendChild (div)
+         content.forEach (({ id, ping, audio_enabled }) => {
+            const row = document.createElement (`div`)
+            row.style.width   = `100%`
+            row.style.display = `block`
+            row.style.left    = `0%`  
+
+            const name_div = document.createElement (`div`)
+            name_div.style.textAlign = `left`
+            name_div.style.display   = `inline-block`
+            name_div.style.width     = `33%`
+            name_div.style.left      = `0%`
+            name_div.innerText       = id.name
+            name_div.style.color = audio_enabled ? `white` : `grey`
+            row.appendChild (name_div)
+
+            const ping_div = document.createElement (`div`)
+            ping_div.style.textAlign = `center` 
+            ping_div.style.display   = `inline-block`
+            ping_div.style.width     = `33%`
+            ping_div.style.left      = `33%`
+            ping_div.innerText       = Math.floor (ping.time)
+            row.appendChild (ping_div)
+
+            const server_div = document.createElement (`div`)
+            server_div.style.textAlign = `right`
+            server_div.style.display   = `inline-block`
+            server_div.style.width     = `33%`
+            server_div.style.left      = `33%`
+            server_div.innerText       = id.server.name
+            row.appendChild (server_div)
+
+            socket_list.appendChild (row)
+
          })
       },
       ping: () => {

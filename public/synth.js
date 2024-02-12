@@ -11,7 +11,7 @@ socket.onopen = () => console.log (`websocket achieved!`)
 socket.onmessage = m => {
    const { method, content } = JSON.parse (m.data)
 
-   console.log (`${ method } message recieved`)
+   // console.log (`${ method } message recieved`)
 
    const handle_incoming = {
 
@@ -44,7 +44,7 @@ socket.onmessage = m => {
          // }
       }
    }
-   console.log (method)
+   // console.log (method)
    handle_incoming[method] ()
 }
 
@@ -101,16 +101,27 @@ document.body.onclick = async () => {
 
       document.body.style.backgroundColor = bg_col
       text_div.remove ()
-      requestAnimationFrame (draw_frame)
 
-      const is_ready = audio_context.state == `running`
+      const name_div = document.createElement (`div`)
+      name_div.style.textAlign = `center`
+      name_div.style.position  = `fixed`
+      name_div.style.color     = `white`
+      name_div.style.width     = `100%`
+      name_div.style.font      = `14px monospace`
+      name_div.style.left      = 0
+      name_div.style.top       = 0
+      name_div.innerText       = synth_info.name
+      document.body.appendChild (name_div)
+
+      const audio_enabled = audio_context.state == `running`
       socket.send (JSON.stringify ({
-         type: `synth`,
-         method: `ready`, 
-         content: { 
-            audio_enabled: is_ready 
-         }
+         type    : `synth`,
+         method  : `audio_enabled`, 
+         content : { audio_enabled }
       }))   
+
+      console.log (synth_info)
+      requestAnimationFrame (draw_frame)
    }
 }
 
