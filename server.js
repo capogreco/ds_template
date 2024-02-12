@@ -10,17 +10,17 @@ const server_id = {
 
 const sockets = new Map ()
 let ctrl = false
-// const kv = await Deno.openKv ()
-const kv = await Deno.openKv (`/Users/capo_greco/Documents/kv/local`)
+const kv = await Deno.openKv ()
+// const kv = await Deno.openKv (`/Users/capo_greco/Documents/kv/local`)
 
-const delete_all_entries = async () => {
-   const iter = await kv.list ({ prefix : [] })
-   for await (const { key } of iter) {
-      await kv.delete (key)
-   }
-}
+// const delete_all_entries = async () => {
+//    const iter = await kv.list ({ prefix : [] })
+//    for await (const { key } of iter) {
+//       await kv.delete (key)
+//    }
+// }
 
-delete_all_entries ()
+// delete_all_entries ()
 
 const update_ctrl = async () => {
    if (!ctrl) return
@@ -152,7 +152,6 @@ const req_handler = async incoming_req => {
       const audio_enabled = false
       sockets.set (id.no, { socket, id, ping, audio_enabled })
       if (sockets.size == 1) {
-         setTimeout (ping_local_sockets, 5000)
          setTimeout (clean_local_sockets, 1000)
       }
       socket.onopen = async () => {
