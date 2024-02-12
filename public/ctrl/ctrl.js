@@ -1,4 +1,5 @@
-const ws_address = `ws://localhost/ctrl`
+// const ws_address = `ws://localhost/ctrl`
+const ws_address = `wss://cold-eagle-12.deno.dev/ctrl`
 
 const socket = new WebSocket (ws_address)
 

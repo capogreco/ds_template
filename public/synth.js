@@ -1,6 +1,7 @@
 const synth_info = {}
 
-const ws_address = `ws://localhost`
+// const ws_address = `ws://localhost`
+const ws_address = `wss://cold-eagle-12.deno.dev`
 
 console.log (`attempting websocket at ${ ws_address }`)
 
