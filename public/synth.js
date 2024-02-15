@@ -1,13 +1,16 @@
 const synth_info = {}
 
-// const ws_address = `ws://localhost`
-const ws_address = `wss://cold-eagle-12.deno.dev`
+const ws_address = `ws://localhost`
+// const ws_address = `wss://cold-eagle-12.deno.dev`
 
 console.log (`attempting websocket at ${ ws_address }`)
 
 const socket = new WebSocket (ws_address)
 
 socket.onopen = () => console.log (`websocket achieved!`)
+
+// check for pings within last 12 seconds.  If not, reload
+const check_connection = () => {}
 
 socket.onmessage = m => {
    const { method, content } = JSON.parse (m.data)

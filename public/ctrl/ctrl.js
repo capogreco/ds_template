@@ -1,17 +1,30 @@
-// const ws_address = `ws://localhost/ctrl`
-const ws_address = `wss://cold-eagle-12.deno.dev/ctrl`
+const ws_address = `ws://localhost/ctrl`
+// const ws_address = `wss://cold-eagle-12.deno.dev/ctrl`
 
 const socket = new WebSocket (ws_address)
+
+let bg_col = `indigo`
+let phase = `connecting`
+let override_hold = false
+
+const id = {}
 
 socket.onmessage = m => {
    const { method, content } = JSON.parse (m.data)
    const manage_method = {
       id: () => {
+         phase = `connected`
+         Object.assign (id, content)
          console.log (`id: ${ content.no }`)
          console.log (`name: ${ content.name }`)
       },
       list: () => {
+
+         bg_col = `indigo`
+         phase  = `connected`
+         
          socket_list.innerText = ``
+
          content.forEach (({ id, ping, audio_enabled }) => {
             const row = document.createElement (`div`)
             row.style.width   = `100%`
@@ -51,6 +64,40 @@ socket.onmessage = m => {
             content : content,
          }))
       },
+      busy: () => {
+         phase = `busy`
+         bg_col = `crimson`
+               
+         socket_list.innerText = ``
+         const text_div = document.createElement (`div`)
+         text_div.style.justifyContent = `center`
+         text_div.style.alignItems     = `center`
+         text_div.style.display        = `flex`
+         text_div.style.width          = `100%`
+         text_div.style.height         = `100%`
+         text_div.style.touchAction    = `none`
+         text_div.innerText = `${ content } is already connected 😠`
+         socket_list.appendChild (text_div)
+
+      },
+      kick: () => {
+         phase = `kicked`
+         bg_col = `crimson`
+
+         socket_list.innerText = ``
+
+         const text_div = document.createElement (`div`)
+         text_div.style.justifyContent = `center`
+         text_div.style.alignItems     = `center`
+         text_div.style.display        = `flex`
+         text_div.style.width          = `100%`
+         text_div.style.height         = `100%`
+         text_div.style.touchAction    = `none`
+         text_div.innerText = `${ content } took ctrl 😵`
+         socket_list.appendChild (text_div)
+
+         setTimeout (() => location.reload () , 3000)
+      },
       greeting: () => console.log (content),
 
    }
@@ -81,18 +128,60 @@ cnv.width  = innerWidth
 cnv.height = innerHeight
 
 const ctx = cnv.getContext (`2d`)
-background ()
+
+document.body.onpointerdown = () => {
+   if (phase == `busy`) {
+      override_hold = Date.now ()
+   }
+}
+
+document.body.onpointerup = () => {
+   if (phase == `busy`) {
+      override_hold = false
+   }
+}
 
 window.onresize = () => {
    cnv.width  = innerWidth
    cnv.height = innerHeight
-   background ()
 
    socket_list.style.width      = `${ innerWidth }px`
    socket_list.style.height     = `${ innerHeight }px`         
 }
 
 function background () {
-   ctx.fillStyle = `indigo`
+   ctx.fillStyle = bg_col
    ctx.fillRect (0, 0, cnv.width, cnv.height)
 }
+
+function draw_frame () {
+   background ()
+   const frame_manager = {
+      connecting : () => {},
+      connected  : () => {},
+      busy       : () => {
+         if (!override_hold) return
+         ctx.fillStyle = `deeppink`
+         const p = (Date.now () - override_hold) / 3000
+         if (p > 1) {
+            override_hold = false
+            bg_col = `deeppink`
+            socket.send (JSON.stringify ({
+               type    : `ctrl`,
+               method  : `override`,
+               content : id,
+
+            }))
+            return
+         }
+         const y = cnv.height * (1 - p)
+         ctx.fillRect (0, y, cnv.width, cnv.height)
+      },
+      kicked     : () => {},
+   }
+   frame_manager[phase] ()
+   requestAnimationFrame (draw_frame)
+}
+
+requestAnimationFrame (draw_frame)
+

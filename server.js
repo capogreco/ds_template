@@ -11,16 +11,6 @@ const server_id = {
 const sockets = new Map ()
 let ctrl = false
 const kv = await Deno.openKv ()
-// const kv = await Deno.openKv (`/Users/capo_greco/Documents/kv/local`)
-
-// const delete_all_entries = async () => {
-//    const iter = await kv.list ({ prefix : [] })
-//    for await (const { key } of iter) {
-//       await kv.delete (key)
-//    }
-// }
-
-// delete_all_entries ()
 
 const update_ctrl = async () => {
    if (!ctrl) return
@@ -53,21 +43,6 @@ const ping_socket = async (socket) => {
    }
 }
 
-const ping_local_sockets = async () => {
-   // if (sockets.size == 0) return
-   // for await (const e of sockets) {
-   //    const v = e[1]
-   //    // console.log (`pinging ${ v.id.name }`)
-   //    if (v.socket.readyState == 1) {
-   //       v.socket.send (JSON.stringify ({
-   //          method  : `ping`,
-   //          content : Date.now (),
-   //       }))   
-   //    }
-   // }
-   // setTimeout (ping_local_sockets, 5000)
-}
-
 const clean_local_sockets = async () => {
    if (sockets.size == 0) return
    const redundant = []
@@ -82,27 +57,27 @@ const clean_local_sockets = async () => {
    setTimeout (clean_local_sockets, 1000)
 }
 
-const check_kv_entries = async () => {
-   if (!is_control) return
+const check_kv_entries = async (repeat) => {
+   console.log (`checking kv entries`)
    const iter = await kv.list ({ prefix : [] })
    const entries = []
    for await (const { value } of iter) {
       entries.push (value)
    }
    for await (const e of entries) {
-      if (e.last_update < Date.now () - 20000) {
+      if (e.ping.last_update < Date.now () - 20000) {
+         console.log (`deleting: ${ e.id.name }`)
          await kv.delete ([ e.id.type, e.id.no ])
       }
    }
-   // console.log (redundant.length)
+   const redundant = []
    for await (const e of redundant) {
       await kv.delete ([ e.id.type, e.id.no ])
       console.log (`deleted: ${ e.id.no }`)
    }
    update_ctrl ()
-   setTimeout (check_kv_entries, 5000)
+   if (ctrl && repeat) setTimeout (check_kv_entries, 5000, repeat)
 }
-
 
 const manage_synth = async (msg, id) => {
    const manage_method = {
@@ -120,6 +95,21 @@ const manage_synth = async (msg, id) => {
 const manage_ctrl  = async (msg, id) => {
    const manage_method = {
       pong: () => manage_pong (msg, id),
+      override: async () => {
+         console.log (`override: ${ msg.content }`)
+         ctrl.socket.send (JSON.stringify ({
+            method  : `kick`,
+            content : id.name,
+         }))
+         ctrl = sockets.get (id.no)
+         console.dir (ctrl)
+         const ping = {
+            time: null,
+            last_update: Date.now (),
+         }
+         kv.set ([ id.type, id.no ], { id, ping })
+         update_ctrl ()
+      },
    }
    manage_method[msg.method] ()
 }
@@ -129,7 +119,6 @@ const manage_pong = async (msg, id) => {
    const now = Date.now ()
    value.ping.last_update = now
    value.ping.time = (now - msg.content) * 0.5
-   // console.log (`${ id.name }'s ping is ${ value.ping }ms`)
    await kv.set ([ id.type, id.no ], value)
 }
 
@@ -141,7 +130,8 @@ const req_handler = async incoming_req => {
       const { socket, response } = Deno.upgradeWebSocket (req)
       const id = {
          no   : req.headers.get (`sec-websocket-key`),
-         name : path == `/ctrl` ? `ctrl` : generate_name (`synth`),
+         // name : path == `/ctrl` ? `ctrl` : generate_name (`synth`),
+         name : generate_name (`synth`),
          type : path == `/ctrl` ? `ctrl` : `synth`,
          server : server_id,
       }
@@ -155,28 +145,33 @@ const req_handler = async incoming_req => {
          setTimeout (clean_local_sockets, 1000)
       }
       socket.onopen = async () => {
-         if (id.type == `ctrl`) {
-            ctrl = { socket, id, ping }
-            // const iter = await kv.list ({ prefix : [] })
-            // const ctrl_array = []
-            // for await (const { key, value } of iter) {
-            //    if (value.id.type == `ctrl`)
-            //    ctrl_array.push (key)
-            //    ctrl_array.push (value)
-            // }
-            // console.dir (ctrl_array.length)
-            // if (ctrl_array.length > 0) {
-            //    console.log (`there is already a controller connected`)
-            //    return
-            // }
-         }
-         const val = { id, ping, audio_enabled }
-         kv.set ([ id.type, id.no ], val)
 
          socket.send (JSON.stringify ({
             method  : `id`,
             content : id,
          }))
+
+         if (id.type == `ctrl`) {
+            const iter = await kv.list ({ prefix : [ `ctrl` ] })
+            const ctrl_array = []
+            await check_kv_entries (false)
+            for await (const { value } of iter) ctrl_array.push (value.id.name)
+            if (ctrl_array.length > 0) {
+               console.log (`${ ctrl_array[0] } is already connected`)
+               socket.send (JSON.stringify ({
+                  method  : `busy`,
+                  content : ctrl_array[0],
+               }))
+               return
+            } 
+            else {
+               ctrl = { socket, id, ping }
+            }
+         }
+
+         const val = { id, ping, audio_enabled }
+         kv.set ([ id.type, id.no ], val)
+
 
          setTimeout (recursive_ping, 5000, socket)
 
@@ -203,6 +198,7 @@ const req_handler = async incoming_req => {
    const options = {
       fsRoot : `public`,
       index  : `index.html`,
+      quiet  : true,
    }
 
    return serveDir (req, options)
