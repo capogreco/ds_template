@@ -1,5 +1,15 @@
 const synth_info = {}
 
+let last_ping = false
+
+const connection_test = () => {
+   if (last_ping < Date.now () - 12000 || socket.readyState > 1) {
+      location.reload ()
+   }
+
+   setTimeout (connection_test, 3000)
+}
+
 // const ws_address = `ws://localhost`
 const ws_address = `wss://cold-eagle-12.deno.dev`
 
@@ -22,9 +32,12 @@ socket.onmessage = m => {
       id: () => {
          Object.assign (synth_info, content)
          console.log (`welcome, ${ synth_info.name }!`)
+         last_ping = Date.now ()
+         connection_test ()
       },
 
       ping: () => {
+         last_ping = Date.now ()
          socket.send (JSON.stringify ({
             type    : `synth`,
             method  : `pong`,
@@ -187,8 +200,8 @@ function draw_frame () {
 }
 
 function check_websocket () {
-   // if (socket.readyState > 1) location.reload ()
+   if (socket.readyState > 1) location.reload ()
    setTimeout (check_websocket, 333)
 }
 
-check_websocket ()
+// check_websocket ()
