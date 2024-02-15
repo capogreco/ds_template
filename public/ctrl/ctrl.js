@@ -1,5 +1,5 @@
-const ws_address = `ws://localhost/ctrl`
-// const ws_address = `wss://cold-eagle-12.deno.dev/ctrl`
+// const ws_address = `ws://localhost/ctrl`
+const ws_address = `wss://cold-eagle-12.deno.dev/ctrl`
 
 const socket = new WebSocket (ws_address)
 
@@ -22,7 +22,7 @@ socket.onmessage = m => {
 
          bg_col = `indigo`
          phase  = `connected`
-         
+
          socket_list.innerText = ``
 
          content.forEach (({ id, ping, audio_enabled }) => {
