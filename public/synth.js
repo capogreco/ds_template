@@ -10,8 +10,8 @@ const connection_test = () => {
    setTimeout (connection_test, 3000)
 }
 
-// const ws_address = `ws://localhost`
-const ws_address = `wss://cold-eagle-12.deno.dev`
+const ws_address = `ws://localhost`
+// const ws_address = `wss://cold-eagle-12.deno.dev`
 
 console.log (`attempting websocket at ${ ws_address }`)
 
@@ -98,7 +98,7 @@ document.body.style.overflow = `hidden`
 
 document.body.style.backgroundColor = `black`
 const text_div                = document.createElement (`div`)
-text_div.innerText            = `tap to join the distributed arpeggiator instrument`
+text_div.innerText            = `tap to join!`
 text_div.style.font           = `italic bolder 80px sans-serif`
 text_div.style.color          = `white`
 text_div.style.display        = `flex`
