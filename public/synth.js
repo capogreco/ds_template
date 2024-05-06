@@ -20,7 +20,7 @@ const socket = new WebSocket (ws_address)
 socket.onopen = () => console.log (`websocket achieved!`)
 
 // check for pings within last 12 seconds.  If not, reload
-const check_connection = () => {}
+// const check_connection = () => {}
 
 socket.onmessage = m => {
    const { method, content } = JSON.parse (m.data)
